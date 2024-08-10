@@ -2,6 +2,8 @@ const db = require("../models/index");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
+const { createToken, verifyExpiration } = db.authToken;
+
 const registerUser = async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -9,7 +11,15 @@ const registerUser = async (req, res) => {
       where: { username },
     });
     if (userExists) {
-      return res.status(400).send("USERNAME_ALREADY_EXISTS");
+      return res.status(400).send("Username already exists");
+    }
+    const passwordRegex = /^(?=.*[A-Za-z]).{8,}$/;
+    if (!passwordRegex.test(password)) {
+      return res
+        .status(400)
+        .json(
+          "Password must be at least 8 characters long and contain at least one alphabet character."
+        );
     }
 
     await db.User.create({
@@ -25,6 +35,7 @@ const registerUser = async (req, res) => {
 const signInUser = async (req, res) => {
   try {
     const { username, password } = req.body;
+
     const user = await db.User.findOne({
       where: { username },
     });
@@ -36,7 +47,7 @@ const signInUser = async (req, res) => {
     const passwordValid = await bcrypt.compare(password, user.password);
     if (!passwordValid) {
       return res
-        .status(404)
+        .status(400)
         .json("Incorrect username and password combination");
     }
 
