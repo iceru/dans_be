@@ -1,12 +1,13 @@
 const db = require("../models/index");
 
 const getAll = (req, res) => {
-  const { location, description, full_time } = req.query;
-  console.log(location);
+  const { location, description, full_time, page = 1, limit = 6 } = req.query;
+
+  const offset = (page - 1) * limit;
 
   const where = {};
   if (location) {
-    where.location = location;
+    where.location = { [db.Sequelize.Op.like]: `%${location}%` };
   }
   if (description) {
     where.description = { [db.Sequelize.Op.like]: `%${description}%` };
@@ -14,9 +15,23 @@ const getAll = (req, res) => {
   if (full_time) {
     where.type = "Full Time";
   }
-  db.Position.findAll({ where })
-    .then((data) => {
-      res.send(data);
+  db.Position.findAndCountAll({
+    where,
+    limit: parseInt(limit),
+    offset: parseInt(offset),
+  })
+    .then((result) => {
+      const { count, rows } = result;
+      const totalPages = Math.ceil(count / limit);
+      res.send({
+        data: rows,
+        pagination: {
+          totalItems: count,
+          totalPages,
+          currentPage: parseInt(page),
+          pageSize: parseInt(limit),
+        },
+      });
     })
     .catch((err) => {
       res.status(500).send({
