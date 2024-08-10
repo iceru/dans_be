@@ -8,9 +8,6 @@ module.exports = {
     database: process.env.DB,
     host: process.env.HOST,
     dialect: "mysql",
-    dialectOptions: {
-      ssl: true,
-    },
     pool: {
       max: 5,
       min: 0,
